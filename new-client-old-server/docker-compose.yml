@@ -1,0 +1,25 @@
+server:
+  image: postgres:9.1
+  environment:
+    POSTGRES_USER: postgres
+    POSTGRES_PASSWORD: postgres
+
+client:
+  image: postgres:9.4
+  environment:
+    PGUSER: postgres
+    PGPASSWORD: postgres
+    PGHOST: server
+  links:
+    - server
+  command: |
+    /bin/bash -c "
+      sleep 10s;
+      psql --command='
+        DROP TABLE IF EXISTS foo;
+        DROP TABLE IF EXISTS bar;
+        CREATE TABLE foo(id INTEGER);
+        CREATE TABLE bar(id INTEGER);
+      ';
+      pg_dump --jobs=2 --no-synchronized-snapshots --format=directory --file=dump --table=foo --table=bar && cat dump/*
+    "
