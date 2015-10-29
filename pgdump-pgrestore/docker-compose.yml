@@ -1,0 +1,36 @@
+server1:
+  image: postgres:9.1
+  environment:
+    POSTGRES_USER: postgres
+    POSTGRES_PASSWORD: postgres
+
+server2:
+  image: postgres:9.4
+  environment:
+    POSTGRES_USER: postgres
+    POSTGRES_PASSWORD: postgres
+
+client:
+  image: postgres:9.4
+  environment:
+    PGUSER: postgres
+    PGPASSWORD: postgres
+  links:
+    - server1
+    - server2
+  command: |
+    /bin/bash -eux -c "
+      sleep 10s
+      psql --single-transaction --host=server1 --command='
+        DROP TABLE IF EXISTS foo;
+        DROP TABLE IF EXISTS bar;
+        CREATE TABLE foo(id INTEGER);
+        CREATE TABLE bar(id INTEGER);
+        INSERT INTO foo(id) (SELECT generate_series(1,100) AS id);
+        INSERT INTO bar(id) (SELECT generate_series(1,100) AS id);
+      '
+      psql --host=server1 --command='\dt+'
+      pg_dump --host=server1 --jobs=2 --no-synchronized-snapshots --format=directory --file=dump --table=foo --table=bar
+      pg_restore --exit-on-error --host=server2 --jobs=5 --dbname=postgres --create --clean dump
+      psql --host=server2 --command='\dt+'
+    "
