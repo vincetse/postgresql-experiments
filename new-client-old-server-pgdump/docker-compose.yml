@@ -13,13 +13,15 @@ client:
   links:
     - server
   command: |
-    /bin/bash -c "
-      sleep 10s;
+    /bin/bash -eux -c "
+      sleep 10s
       psql --command='
         DROP TABLE IF EXISTS foo;
         DROP TABLE IF EXISTS bar;
         CREATE TABLE foo(id INTEGER);
         CREATE TABLE bar(id INTEGER);
-      ';
-      pg_dump --jobs=2 --no-synchronized-snapshots --format=directory --file=dump --table=foo --table=bar && cat dump/*
+        INSERT INTO foo(id) (SELECT generate_series(1,100) AS id);
+        INSERT INTO bar(id) (SELECT generate_series(1,100) AS id);
+      '
+      pg_dump --jobs=2 --no-synchronized-snapshots --format=directory --file=dump --table=foo --table=bar && zcat dump/*.gz && cat dump/toc.dat
     "
