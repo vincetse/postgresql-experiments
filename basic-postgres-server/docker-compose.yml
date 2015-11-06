@@ -1,0 +1,10 @@
+db:
+  # Run a Postgresql 9.4 server
+  image: postgres:9.4
+  # See this for env var docs: https://hub.docker.com/_/postgres/
+  environment:
+    POSTGRES_USER: postgres
+    POSTGRES_PASSWORD: postgres
+  # Forward container tcp/5432 to host tcp/15432
+  ports:
+    - "15432:5432"
