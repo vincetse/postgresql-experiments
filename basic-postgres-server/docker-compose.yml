@@ -1,6 +1,8 @@
 db:
   # Run a Postgresql 9.4 server
   image: postgres:9.4
+  # Always restart Postgresql if it fails
+  restart: always
   # See this for env var docs: https://hub.docker.com/_/postgres/
   environment:
     POSTGRES_USER: postgres
