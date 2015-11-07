@@ -1,0 +1,21 @@
+server:
+  image: postgres:9.4
+  environment:
+    POSTGRES_USER: postgres
+    POSTGRES_PASSWORD: postgres
+
+client:
+  image: postgres:9.4
+  environment:
+    PGUSER: postgres
+    PGPASSWORD: postgres
+    PGHOST: server
+  links:
+    - server
+  volumes:
+    - ".:/sql"
+  command: |
+    /bin/bash -eux -c "
+      sleep 10s
+      psql --file=/sql/temp-table-do-instead.sql
+    "
