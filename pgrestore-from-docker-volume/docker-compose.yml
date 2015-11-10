@@ -1,0 +1,22 @@
+server:
+  image: postgres:9.4
+  environment:
+    POSTGRES_USER: postgres
+    POSTGRES_PASSWORD: postgres
+
+client:
+  image: postgres:9.4
+  environment:
+    PGUSER: postgres
+    PGPASSWORD: postgres
+  links:
+    - server
+  volumes:
+    - ./files:/files
+  command: |
+    /bin/bash -eux -c "
+      sleep 10s
+      psql --host=server --command='\dt+'
+      pg_restore --exit-on-error --host=server --dbname=postgres --create --clean /files
+      psql --host=server --command='\dt+'
+    "
