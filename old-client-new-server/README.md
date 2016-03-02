@@ -1,3 +1,3 @@
 # Postgresql 9.1 Server, Postgresql 9.4 Client
 
-Testing Postgresql 9.4 `pg_dump` against a 9.1 server.
+Postgres 8.4 client with Postgres 9.4 server.  It works (to some degree)!
