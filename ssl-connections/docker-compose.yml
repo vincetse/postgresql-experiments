@@ -9,7 +9,7 @@ services:
     - ./generate-ssl-certs.sh:/generate-ssl-certs.sh:ro
 
   server:
-    image: postgres:11-alpine
+    image: postgres:14-alpine
     environment:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: postgres
@@ -20,7 +20,7 @@ services:
     - ./configure-server-ssh.sh:/docker-entrypoint-initdb.d/configure-server-ssh.sh:ro
 
   client:
-    image: postgres:11-alpine
+    image: postgres:14-alpine
     environment:
       PGUSER: postgres
       PGPASSWORD: postgres
