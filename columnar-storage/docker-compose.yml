@@ -1,0 +1,22 @@
+version: "3.7"
+services:
+  server:
+    image: citusdata/citus:11-alpine
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+
+  client:
+    image: citusdata/citus:11-alpine
+    environment:
+      PGUSER: postgres
+      PGPASSWORD: postgres
+      PGHOST: server
+    links:
+      - server
+    command: |
+      /bin/bash -eux -c "
+        psql --echo-all --file=/schema-and-data.sql
+      "
+    volumes:
+      - ./schema-and-data.sql:/schema-and-data.sql:ro
