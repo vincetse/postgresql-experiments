@@ -1,0 +1,28 @@
+version: "3.7"
+services:
+  server:
+    image: postgres:15-alpine
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: db
+
+  client:
+    image: postgres:15-alpine
+    environment:
+      PGUSER: postgres
+      PGPASSWORD: postgres
+      PGHOST: server
+      PGDATABASE: db
+    links:
+      - server
+    command: |
+      /bin/bash -eux -c "
+        psql --echo-all --file=/schema-and-data.sql
+        PGUSER=user1 psql --echo-all --file=/user1.sql
+        PGUSER=user2 psql --echo-all --file=/user2.sql
+      "
+    volumes:
+      - ./schema-and-data.sql:/schema-and-data.sql:ro
+      - ./user1.sql:/user1.sql:ro
+      - ./user2.sql:/user2.sql:ro
