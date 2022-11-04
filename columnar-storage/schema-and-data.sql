@@ -24,7 +24,9 @@ SELECT AVG(i) FROM simple_columnar;
 \d+ simple_row
 \d+ simple_columnar
 
+--------------------------------------------------------------------------------
 -- performance test
+--------------------------------------------------------------------------------
 DROP TABLE IF EXISTS pref_row;
 CREATE TABLE perf_row(
   c00 int8, c01 int8, c02 int8, c03 int8, c04 int8, c05 int8, c06 int8, c07 int8, c08 int8, c09 int8,
@@ -71,6 +73,7 @@ INSERT INTO perf_columnar
     g % 40500, g % 41000, g % 41500, g % 42000, g % 42500, g % 43000, g % 43500, g % 44000, g % 44500, g % 45000,
     g % 45500, g % 46000, g % 46500, g % 47000, g % 47500, g % 48000, g % 48500, g % 49000, g % 49500, g % 50000
   FROM generate_series(1,500000) g;
+--------------------------------------------------------------------------------
 
 VACUUM (FREEZE, ANALYZE) perf_row;
 VACUUM (FREEZE, ANALYZE) perf_columnar;
@@ -78,6 +81,13 @@ VACUUM (FREEZE, ANALYZE) perf_columnar;
 -- checkpoint if superuser; otherwise wait for system to settle
 CHECKPOINT; CHECKPOINT;
 
+
+--------------------------------------------------------------------------------
+-- table sizes
+--------------------------------------------------------------------------------
+SELECT pg_total_relation_size('perf_row')::numeric;
+
+SELECT pg_total_relation_size('perf_columnar')
 
 SELECT pg_total_relation_size('perf_row')::numeric/
        pg_total_relation_size('perf_columnar') AS compression_ratio;
@@ -93,6 +103,13 @@ VACUUM;
 --
 SET max_parallel_workers_per_gather = 0;
 
+--------------------------------------------------------------------------------
+-- perf_row query plan
+--------------------------------------------------------------------------------
 EXPLAIN (ANALYZE, BUFFERS) SELECT c00, SUM(c29), AVG(c71) FROM perf_row GROUP BY c00;
 
+
+--------------------------------------------------------------------------------
+-- perf_columnar query plan
+--------------------------------------------------------------------------------
 EXPLAIN (ANALYZE, BUFFERS) SELECT c00, SUM(c29), AVG(c71) FROM perf_columnar GROUP BY c00;
