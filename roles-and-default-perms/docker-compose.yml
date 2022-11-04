@@ -21,8 +21,13 @@ services:
         psql --echo-all --file=/schema-and-data.sql
         PGUSER=user1 psql --echo-all --file=/user1.sql
         PGUSER=user2 psql --echo-all --file=/user2.sql
+        psql --echo-all --file=/table-metadata.sql
+        PGUSER=user2 psql --echo-all --file=/user2-drop-tables.sql
+        psql --echo-all --file=/table-metadata.sql
       "
     volumes:
       - ./schema-and-data.sql:/schema-and-data.sql:ro
       - ./user1.sql:/user1.sql:ro
       - ./user2.sql:/user2.sql:ro
+      - ./table-metadata.sql:/table-metadata.sql:ro
+      - ./user2-drop-tables.sql:/user2-drop-tables.sql:ro

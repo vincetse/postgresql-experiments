@@ -52,4 +52,5 @@ ON TABLES
 --------------------------------------------------------------------------------
 -- create a table in shared schema and watch user1 and user2 be able to use it
 --------------------------------------------------------------------------------
+SET ROLE team;
 CREATE TABLE shared.table_with_default_perms(id INTEGER);
