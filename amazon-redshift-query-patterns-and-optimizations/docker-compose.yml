@@ -1,0 +1,20 @@
+version: "3.7"
+services:
+
+  client:
+    image: postgres:15-alpine
+    environment:
+      PGUSER: ${PGUSER}
+      PGPASSWORD: ${PGPASSWORD}
+      PGHOST: ${PGHOST}
+      PGPORT: ${PGPORT}
+      PGDATABASE: demodb
+      PGSSLMODE: require
+    command: |
+      /bin/bash -eux -c "
+        psql --echo-all --file=/schema_setup.sql
+        psql --echo-all --file=/table_load.sql
+      "
+    volumes:
+      - ./schema_setup.sql:/schema_setup.sql:ro
+      - ./table_load.sql:/table_load.sql:ro
