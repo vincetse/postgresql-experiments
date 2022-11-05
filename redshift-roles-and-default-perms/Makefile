@@ -32,7 +32,9 @@ _create:
 		--master-username $(user) \
 		--master-user-password $(password) \
 		--publicly-accessible \
-		--preferred-maintenance-window "Mon:12:00-Mon:12:30" \
+		--preferred-maintenance-window "Mon:11:00-Mon:11:30" \
+		--automated-snapshot-retention-period 0 \
+		--manual-snapshot-retention-period 1 \
 		--tags Key=x-category,Value=$(cluster_category_tag)
 
 _create_wait:
