@@ -1,0 +1,103 @@
+version: '3'
+
+services:
+  leader:
+    image: "postgres:9.4"
+    restart: "always"
+    # See this for env var docs: https://hub.docker.com/_/postgres/
+    environment:
+      POSTGRES_DB: "mydb1"
+      POSTGRES_USER: "postgres"
+      POSTGRES_PASSWORD: "postgres"
+    # Forward container tcp/5432 to host tcp/15432
+    ports:
+      - "15432:5432"
+
+  follower1:
+    image: "postgres:9.4"
+    restart: "always"
+    # See this for env var docs: https://hub.docker.com/_/postgres/
+    environment:
+      POSTGRES_DB: "mydb1"
+      POSTGRES_USER: "postgres"
+      POSTGRES_PASSWORD: "postgres"
+    # Forward container tcp/5432 to host tcp/25432
+    ports:
+      - "25432:5432"
+    depends_on:
+    - "leader"
+
+  follower2:
+    image: "postgres:9.4"
+    restart: "always"
+    # See this for env var docs: https://hub.docker.com/_/postgres/
+    environment:
+      POSTGRES_DB: "mydb1"
+      POSTGRES_USER: "postgres"
+      POSTGRES_PASSWORD: "postgres"
+    # Forward container tcp/5432 to host tcp/35432
+    ports:
+      - "35432:5432"
+    depends_on:
+    - "leader"
+
+  bucardo:
+    # https://hub.docker.com/r/plgr/bucardo/
+    image: "plgr/bucardo:latest"
+    restart: "always"
+    volumes:
+    - "./bucardo.json:/media/bucardo/bucardo.json:ro"
+    depends_on:
+    - "leader"
+    - "follower1"
+    - "follower2"
+
+  client:
+    image: "postgres:9.4"
+    environment:
+      PGDATABASE: "mydb1"
+      PGUSER: "postgres"
+      PGPASSWORD: "postgres"
+    volumes:
+    - "./scripts:/scripts:ro"
+    depends_on:
+    - "leader"
+    - "follower1"
+    - "follower2"
+
+  data:
+    image: "postgres:9.4"
+    environment:
+      PGDATABASE: "mydb1"
+      PGUSER: "postgres"
+      PGPASSWORD: "postgres"
+    volumes:
+    - "./scripts:/scripts:ro"
+    depends_on:
+    - "leader"
+    - "follower1"
+    - "follower2"
+    command: |
+      /bin/bash -eux -c "
+        /scripts/init-data-set.sh
+        /scripts/select-count-all-tables.sh
+      "
+
+  pgbench:
+    image: "postgres:9.4"
+    environment:
+      PGDATABASE: "mydb1"
+      PGUSER: "postgres"
+      PGPASSWORD: "postgres"
+    volumes:
+    - "./scripts:/scripts:ro"
+    depends_on:
+    - "leader"
+    - "follower1"
+    - "follower2"
+    # https://www.endpoint.com/blog/2016/05/31/bucardo-replication-workarounds-for
+    command: |
+      /bin/bash -c "
+        pgbench -c 4 -t 10000 --host=leader
+        /scripts/select-count-all-tables.sh
+      "
