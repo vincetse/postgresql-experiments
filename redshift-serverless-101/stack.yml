@@ -1,0 +1,57 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Description: |
+  Redshift Serverless demo
+
+Parameters:
+  NamespaceName:
+    Description: "The name of the namespace."
+    Type: "String"
+
+  AdminUsername:
+    Description: "The username of the administrator for the primary database created in the namespace."
+    Type: "String"
+    MinLength: 1
+
+  AdminUserPassword:
+    Description: "The password of the administrator for the primary database created in the namespace."
+    Type: "String"
+    MinLength: 1
+
+  DatabaseName:
+    Description: "The name of the primary database created in the namespace."
+    Type: "String"
+    MinLength: 1
+
+  WorkgroupName:
+    Description: "The name of the workgroup."
+    Type: "String"
+    MinLength: 1
+
+  BaseCapacity:
+    Description: "The base compute capacity of the workgroup in Redshift Processing Units (RPUs)."
+    Type: "Number"
+    MinValue: 32
+    MaxValue: 512
+
+Resources:
+  Namespace:
+    Type: "AWS::RedshiftServerless::Namespace"
+    Properties:
+      NamespaceName: !Ref NamespaceName
+      AdminUsername: !Ref AdminUsername
+      AdminUserPassword: !Ref AdminUserPassword
+      DbName: !Ref DatabaseName
+      Tags:
+        - Key: "x-project"
+          Value: "postgresql-experiments/redshift-serverless-101"
+
+  Workgroup:
+    Type: "AWS::RedshiftServerless::Workgroup"
+    Properties:
+      WorkgroupName: !Ref WorkgroupName
+      BaseCapacity: !Ref BaseCapacity
+      NamespaceName: !Ref Namespace
+      PubliclyAccessible: "true"
+      Tags:
+        - Key: "x-project"
+          Value: "postgresql-experiments/redshift-serverless-101"
