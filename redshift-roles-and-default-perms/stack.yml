@@ -1,0 +1,125 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Description: |
+  Redshift roles and default permissions
+
+Parameters:
+
+  ClusterIdentifier:
+    Description: "A unique identifier for the cluster. You use this identifier to refer to the cluster for any subsequent cluster operations such as deleting or modifying. The identifier also appears in the Amazon Redshift console."
+    Type: "String"
+    MinLength: 1
+
+  ClusterType:
+    Description: "The type of the cluster."
+    Type: "String"
+    AllowedValues:
+      - "single-node"
+      - "multi-node"
+
+  NodeType:
+    Description: "The node type to be provisioned for the cluster."
+    Type: "String"
+    AllowedValues:
+      - "ds2.xlarge"
+      - "ds2.8xlarge"
+      - "dc1.large"
+      - "dc1.8xlarge"
+      - "dc2.large"
+      - "dc2.8xlarge"
+      - "ra3.xlplus"
+      - "ra3.4xlarge"
+      - "ra3.16xlarge"
+
+  NumberOfNodes:
+    Description: "The number of compute nodes in the cluster. This parameter is required when the ClusterType parameter is specified as multi-node."
+    Type: "Number"
+    MinValue: 1
+    MaxValue: 100
+
+  Port:
+    Description: "The port number on which the cluster accepts incoming connections."
+    Type: "Number"
+    MinValue: 1150
+    MaxValue: 65535
+
+  DatabaseName:
+    Description: "The name of the primary database created in the namespace."
+    Type: "String"
+    MinLength: 1
+
+  MasterUsername:
+    Description: "The user name associated with the admin user account for the cluster that is being created."
+    Type: "String"
+    MinLength: 1
+
+  MasterUserPassword:
+    Description: "The password associated with the admin user account for the cluster that is being created."
+    Type: "String"
+    MinLength: 1
+
+  ProjectTag:
+    Description: "Resource tag for a project"
+    Type: "String"
+    MinLength: 1
+
+Resources:
+
+  Cluster:
+    Type: "AWS::Redshift::Cluster"
+    Properties:
+      AllowVersionUpgrade: true
+      AutomatedSnapshotRetentionPeriod: 0
+      ClusterIdentifier: !Ref ClusterIdentifier
+      ClusterType: !Ref ClusterType
+      DBName: !Ref DatabaseName
+      IamRoles:
+        - !GetAtt "Role.Arn"
+      ManualSnapshotRetentionPeriod: 1
+      MasterUsername: !Ref MasterUsername
+      MasterUserPassword: !Ref MasterUserPassword
+      NodeType: !Ref NodeType
+      NumberOfNodes: !Ref NumberOfNodes
+      ClusterParameterGroupName: !Ref ParameterGroup
+      Port: !Ref Port
+      PreferredMaintenanceWindow: "Mon:11:00-Mon:11:30"
+      PubliclyAccessible: true
+      Tags:
+        - Key: "x-project"
+          Value: !Ref ProjectTag
+
+  ParameterGroup:
+    Type: "AWS::Redshift::ClusterParameterGroup"
+    Properties:
+      Description: "Custom parameters"
+      ParameterGroupFamily: "redshift-1.0"
+      Parameters:
+        - ParameterName: "require_ssl"
+          ParameterValue: "true"
+        - ParameterName: "datestyle"
+          ParameterValue: "ISO"
+        - ParameterName: "enable_user_activity_logging"
+          ParameterValue: "false"
+        - ParameterName: "use_fips_ssl"
+          ParameterValue: "false"
+      Tags:
+        - Key: "x-project"
+          Value: !Ref ProjectTag
+
+  Role:
+    Type: "AWS::IAM::Role"
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: "Allow"
+            Principal:
+              Service:
+                - "redshift.amazonaws.com"
+            Action:
+              - "sts:AssumeRole"
+      Path: "/"
+      ManagedPolicyArns:
+        - "arn:aws:iam::aws:policy/AmazonS3FullAccess"
+      Tags:
+        - Key: "x-project"
+          Value: !Ref ProjectTag

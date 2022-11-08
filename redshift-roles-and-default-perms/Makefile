@@ -1,21 +1,43 @@
 region = us-east-1
 aws = aws --region $(region)
+cf = $(aws) cloudformation
 rs = $(aws) redshift
 ec2 = $(aws) ec2
 
 cluster_name = demo
 database_name = db
 port = 8192
+cluster_type = single-node
 node_type = dc2.large
+number_of_nodes = 1
 user = dba
 password := $(shell echo $${RANDOM} | shasum | awk '{print $$1}')Z
-cluster_category_tag = default-perms-demo
+project_name_tag = postgresql-experiments/redshift-roles-and-default-perms
 
-_credentials:
-	@echo master user: $(user)
-	@echo master password: $(password)
+TEMPLATE = --template-body file://stack.yml
+STACK_NAME = redshift-roles-and-default-perms
+STACK = --stack-name $(STACK_NAME)
+PARAMETERS = --parameters \
+	ParameterKey=ClusterIdentifier,ParameterValue=$(cluster_name) \
+	ParameterKey=ClusterType,ParameterValue=$(cluster_type) \
+	ParameterKey=NodeType,ParameterValue=$(node_type) \
+	ParameterKey=NumberOfNodes,ParameterValue=$(number_of_nodes) \
+	ParameterKey=Port,ParameterValue=$(port) \
+	ParameterKey=MasterUsername,ParameterValue=$(user) \
+	ParameterKey=MasterUserPassword,ParameterValue=$(password) \
+	ParameterKey=DatabaseName,ParameterValue=$(database_name) \
+	ParameterKey=ProjectTag,ParameterValue=$(project_name_tag)
 
-create: _credentials _create _create_wait
+validate:
+	$(cf) validate-template $(TEMPLATE)
+
+update: validate
+	$(cf) update-stack $(STACK) $(TEMPLATE) \
+		$(PARAMETERS) \
+		--capabilities CAPABILITY_IAM
+	$(cf) wait stack-update-complete $(STACK)
+
+create: _create validate
 	$(eval host = $(shell $(rs) describe-clusters --cluster-identifier $(cluster_name) --query "Clusters[0].Endpoint.Address" --output text))
 	@echo PGUSER=$(user) > .env
 	@echo PGPASSWORD=$(password) >> .env
@@ -23,47 +45,15 @@ create: _credentials _create _create_wait
 	@echo PGPORT=$(port) >> .env
 
 _create:
-	$(rs) create-cluster \
-		--cluster-identifier $(cluster_name) \
-		--cluster-type single-node \
-		--port $(port) \
-		--db-name $(database_name) \
-		--node-type $(node_type) \
-		--master-username $(user) \
-		--master-user-password $(password) \
-		--publicly-accessible \
-		--preferred-maintenance-window "Mon:11:00-Mon:11:30" \
-		--automated-snapshot-retention-period 0 \
-		--manual-snapshot-retention-period 1 \
-		--tags Key=x-category,Value=$(cluster_category_tag)
+	$(cf) create-stack $(STACK) $(TEMPLATE) \
+		$(PARAMETERS) \
+		--capabilities CAPABILITY_IAM
+	$(cf) wait stack-create-complete $(STACK)
 
-_create_wait:
-	while :; do \
-		status=$$($(rs) describe-clusters --cluster-identifier $(cluster_name) --query "Clusters[0].ClusterAvailabilityStatus" --output text); \
-		if [[ $${status} != "Available" ]]; then \
-			sleep 30; \
-		else \
-			break; \
-		fi; \
-	done
+delete:
+	$(cf) delete-stack $(STACK)
+	$(cf) wait stack-delete-complete $(STACK)
 
 describe:
 	$(rs) describe-clusters \
 		--cluster-identifier $(cluster_name)
-
-delete:
-	$(rs) delete-cluster \
-		--cluster-identifier $(cluster_name) \
-		--skip-final-cluster-snapshot
-	rm -f .env
-
-# Add my IP to security group ingress
-_get_my_ip:
-	$(eval ip = $(shell curl -s -4 https://ifconfig.me))
-
-sg: _get_my_ip
-	-$(ec2) authorize-security-group-ingress \
-		--group-name default \
-		--protocol tcp \
-		--port $(port) \
-		--cidr $(ip)/32
