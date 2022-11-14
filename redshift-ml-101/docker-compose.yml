@@ -1,0 +1,28 @@
+version: "3.7"
+services:
+
+  train:
+    image: postgres:15-alpine
+    environment:
+      PGUSER: ${PGUSER}
+      PGPASSWORD: ${PGPASSWORD}
+      PGHOST: ${PGHOST}
+      PGPORT: ${PGPORT}
+      PGDATABASE: db
+      PGSSLMODE: require
+    command: |
+      /bin/bash -eux -c "
+        psql --echo-all --file=/schema-and-data.sql
+        PGUSER=demouser PGPASSWORD=p0sTgres psql --echo-all --file=/ml-train.sql
+      "
+    volumes:
+      - ./schema-and-data.sql:/schema-and-data.sql:ro
+      - ./ml-train.sql:/ml-train.sql:ro
+      - ./ml-eval-infer.sql:/ml-eval-infer.sql:ro
+
+  evaluate:
+    extends: train
+    command: |
+      /bin/bash -eux -c "
+        PGUSER=demouser PGPASSWORD=p0sTgres psql --echo-all --file=/ml-eval-infer.sql
+      "
