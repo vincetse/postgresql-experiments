@@ -63,6 +63,7 @@ _create:
 delete:
 	-$(s3) rm s3://$(ml_bucket_name)/ --recursive
 	$(cf) delete-stack $(STACK)
+	rm -f .env
 	$(cf) wait stack-delete-complete $(STACK)
 
 describe:
