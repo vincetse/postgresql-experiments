@@ -41,9 +41,14 @@ Resources:
       AdminUsername: !Ref AdminUsername
       AdminUserPassword: !Ref AdminUserPassword
       DbName: !Ref DatabaseName
+      DefaultIamRoleArn: !GetAtt "RedshiftRole.Arn"
+      IamRoles:
+        - !GetAtt "RedshiftRole.Arn"
       Tags:
         - Key: "x-project"
           Value: "postgresql-experiments/redshift-serverless-101"
+    DependsOn:
+      - "RedshiftRole"
 
   Workgroup:
     Type: "AWS::RedshiftServerless::Workgroup"
@@ -55,3 +60,27 @@ Resources:
       Tags:
         - Key: "x-project"
           Value: "postgresql-experiments/redshift-serverless-101"
+    DependsOn:
+      - "Namespace"
+
+  RedshiftRole:
+    Type: "AWS::IAM::Role"
+    Properties:
+      RoleName: "RedshiftDefaultRole"
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+        - Effect: "Allow"
+          Principal:
+            Service:
+              - "redshift.amazonaws.com"
+          Action:
+          - "sts:AssumeRole"
+      ManagedPolicyArns:
+        - "arn:aws:iam::aws:policy/service-role/AWSGlueServiceRole"
+        - "arn:aws:iam::aws:policy/AmazonS3FullAccess"
+
+Outputs:
+  RedshiftRoleArn:
+    Description: "ARN of Redshift role"
+    Value: !GetAtt "RedshiftRole.Arn"

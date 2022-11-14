@@ -22,6 +22,8 @@ PARAMETERS = --parameters \
 	ParameterKey=AdminUserPassword,ParameterValue=$(password) \
 	ParameterKey=DatabaseName,ParameterValue=$(database_name) \
 	ParameterKey=BaseCapacity,ParameterValue=$(base_capacity)
+TAGS = --tags \
+	Key=x-project,Value=postgresql-experiments/redshift-serverless-101
 
 validate:
 	$(cf) validate-template $(TEMPLATE)
@@ -30,11 +32,21 @@ create: _create _env
 
 _create: _credentials validate
 	$(cf) create-stack $(STACK) $(TEMPLATE) \
-		$(PARAMETERS)
+		$(PARAMETERS) \
+		$(TAGS) \
+		--capabilities CAPABILITY_NAMED_IAM
 	$(cf) wait stack-create-complete $(STACK)
+
+update: validate
+	$(cf) update-stack $(STACK) $(TEMPLATE) \
+		$(PARAMETERS) \
+		$(TAGS) \
+		--capabilities CAPABILITY_NAMED_IAM
+	$(cf) wait stack-update-complete $(STACK)
 
 delete:
 	$(cf) delete-stack $(STACK)
+	rm -f .env
 	$(cf) wait stack-delete-complete $(STACK)
 
 _credentials:
@@ -52,6 +64,7 @@ _env:
 	@echo PGPASSWORD=$(password) >> .env
 	@echo PGHOST=$(host) >> .env
 	@echo PGPORT=$(port) >> .env
+	@echo PGDATABASE=$(database_name) >> .env
 
 
 __create: _credentials _create _create_wait
