@@ -1,0 +1,80 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Description: |
+  Redshift Serverless datashare demo
+
+Parameters:
+  AdminUsername:
+    Description: "The username of the administrator for the primary database created in the namespace."
+    Type: "String"
+    MinLength: 1
+
+  AdminUserPassword:
+    Description: "The password of the administrator for the primary database created in the namespace."
+    Type: "String"
+    MinLength: 1
+
+  BaseCapacity:
+    Description: "The base compute capacity of the workgroup in Redshift Processing Units (RPUs)."
+    Type: "Number"
+    MinValue: 32
+    MaxValue: 512
+
+Resources:
+  ProducerNamespace:
+    Type: "AWS::RedshiftServerless::Namespace"
+    Properties:
+      NamespaceName: "producer"
+      AdminUsername: !Ref AdminUsername
+      AdminUserPassword: !Ref AdminUserPassword
+      DbName: "producer"
+      DefaultIamRoleArn: !GetAtt "RedshiftRole.Arn"
+      IamRoles:
+        - !GetAtt "RedshiftRole.Arn"
+
+  ProducerWorkgroup:
+    Type: "AWS::RedshiftServerless::Workgroup"
+    Properties:
+      WorkgroupName: "producer"
+      BaseCapacity: !Ref BaseCapacity
+      NamespaceName: !Ref ProducerNamespace
+      PubliclyAccessible: "true"
+    DependsOn:
+      - "ProducerNamespace"
+
+  ConsumerNamespace:
+    Type: "AWS::RedshiftServerless::Namespace"
+    Properties:
+      NamespaceName: "consumer"
+      AdminUsername: !Ref AdminUsername
+      AdminUserPassword: !Ref AdminUserPassword
+      DbName: "consumer"
+      DefaultIamRoleArn: !GetAtt "RedshiftRole.Arn"
+      IamRoles:
+        - !GetAtt "RedshiftRole.Arn"
+
+  ConsumerWorkgroup:
+    Type: "AWS::RedshiftServerless::Workgroup"
+    Properties:
+      WorkgroupName: "consumer"
+      BaseCapacity: !Ref BaseCapacity
+      NamespaceName: !Ref ConsumerNamespace
+      PubliclyAccessible: "true"
+    DependsOn:
+      - "ConsumerNamespace"
+
+  RedshiftRole:
+    Type: "AWS::IAM::Role"
+    Properties:
+      RoleName: "RedshiftDefaultRole-datashares"
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+        - Effect: "Allow"
+          Principal:
+            Service:
+              - "redshift.amazonaws.com"
+          Action:
+          - "sts:AssumeRole"
+      ManagedPolicyArns:
+        - "arn:aws:iam::aws:policy/service-role/AWSGlueServiceRole"
+        - "arn:aws:iam::aws:policy/AmazonS3FullAccess"

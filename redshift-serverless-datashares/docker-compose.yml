@@ -1,0 +1,34 @@
+version: "3.7"
+services:
+
+  producer-setup:
+    image: postgres:15-alpine
+    environment:
+      PGUSER: ${PGUSER}
+      PGPASSWORD: ${PGPASSWORD}
+      PGHOST: ${PRODUCER_PGHOST}
+      PGPORT: ${PGPORT}
+      PGDATABASE: ${PRODUCER_PGDATABASE}
+      PGSSLMODE: require
+    command: |
+      /bin/bash -eux -c "
+        psql --echo-all --file=/schema-and-data.sql
+      "
+    volumes:
+      - ./schema-and-data.sql:/schema-and-data.sql:ro
+
+  consumer:
+    image: postgres:15-alpine
+    environment:
+      PGUSER: ${PGUSER}
+      PGPASSWORD: ${PGPASSWORD}
+      PGHOST: ${CONSUMER_PGHOST}
+      PGPORT: ${PGPORT}
+      PGDATABASE: ${CONSUMER_PGDATABASE}
+      PGSSLMODE: require
+    command: |
+      /bin/bash -eux -c "
+        psql --echo-all --file=/consumer.sql
+      "
+    volumes:
+      - ./consumer.sql:/consumer.sql:ro

@@ -1,0 +1,18 @@
+-- create some dummy data
+DROP TABLE IF EXISTS foobar;
+CREATE TABLE foobar(id INTEGER);
+INSERT INTO foobar VALUES(1), (2), (3);
+
+-- create the datashare
+DROP DATASHARE demo;
+CREATE DATASHARE demo
+  SET PUBLICACCESSIBLE true;
+ALTER DATASHARE demo
+  ADD SCHEMA public;
+ALTER DATASHARE demo
+  ADD ALL TABLES IN SCHEMA public;
+GRANT ALTER, USAGE ON DATASHARE demo TO dba;
+
+\x
+DESC DATASHARE demo;
+SHOW DATASHARES;
