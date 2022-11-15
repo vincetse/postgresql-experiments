@@ -6,15 +6,17 @@ rs = $(aws) redshift
 rss = $(aws) redshift-serverless
 ec2 = $(aws) ec2
 
+# set this to something [a-z0-9]+ in case of name collisions
+suffix = c2s
 user = dba
 password := $(shell echo $${RANDOM} | shasum | awk '{print $$1}')Z
-producer_name = producerv2
-consumer_name = consumerv2
-datashare_name = demo
+producer_name = producer$(suffix)
+consumer_name = consumer$(suffix)
+datashare_name = demo$(suffix)
 project_name_tag = postgresql-experiments/redshift-cluster-datashare
 
 TEMPLATE = --template-body file://stack.yml
-STACK_NAME = redshift-cluster-datashare4
+STACK_NAME = redshift-cluster-datashare-$(suffix)
 STACK = --stack-name $(STACK_NAME)
 PARAMETERS = --parameters \
 	ParameterKey=ProducerName,ParameterValue=$(producer_name) \
@@ -44,10 +46,14 @@ update: validate
 		--capabilities CAPABILITY_NAMED_IAM
 	$(cf) wait stack-update-complete $(STACK)
 
-delete:
+delete: _delete_datashare
 	$(cf) delete-stack $(STACK)
 	rm -f .env
 	$(cf) wait stack-delete-complete $(STACK)
+
+_delete_datashare:
+	-docker-compose run consumer psql --command="DROP DATABASE producer;"
+	-docker-compose run producer-setup psql --command="DROP DATASHARE $(datashare_name);"
 
 ################################################################################
 # Generate .env file with Redshift credentials
