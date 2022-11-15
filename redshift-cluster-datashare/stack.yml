@@ -1,0 +1,100 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Description: |
+  Redshift Serverless datashare demo
+
+Parameters:
+  ProducerName:
+    Description: "Name used for producer resources"
+    Type: "String"
+    MinLength: 3
+    MaxLength: 64
+    AllowedPattern: "^[a-z0-9-]+$"
+
+  ConsumerName:
+    Description: "Name used for consumer resources"
+    Type: "String"
+    MinLength: 3
+    MaxLength: 64
+    AllowedPattern: "^[a-z0-9-]+$"
+
+  AdminUsername:
+    Description: "The username of the administrator for the primary database created in the namespace."
+    Type: "String"
+    MinLength: 1
+
+  AdminUserPassword:
+    Description: "The password of the administrator for the primary database created in the namespace."
+    Type: "String"
+    MinLength: 1
+
+  ProjectTag:
+    Description: "Tag to apply to all resources"
+    Type: "String"
+
+Resources:
+
+  ProducerCluster:
+    Type: "AWS::Redshift::Cluster"
+    Properties:
+      AllowVersionUpgrade: true
+      AutomatedSnapshotRetentionPeriod: 1
+      ClusterIdentifier: !Ref ProducerName
+      ClusterType: "single-node"
+      DBName: "producer"
+      IamRoles:
+        - !GetAtt "RedshiftRole.Arn"
+      ManualSnapshotRetentionPeriod: 1
+      MasterUsername: !Ref AdminUsername
+      MasterUserPassword: !Ref AdminUserPassword
+      NodeType: "ra3.xlplus"
+      NumberOfNodes: 1
+      Port: 5439
+      Encrypted: true
+      PreferredMaintenanceWindow: "Mon:11:00-Mon:11:30"
+      PubliclyAccessible: true
+      Tags:
+        - Key: "x-project"
+          Value: !Ref ProjectTag
+
+  ConsumerNamespace:
+    Type: "AWS::RedshiftServerless::Namespace"
+    Properties:
+      NamespaceName: !Ref ConsumerName
+      AdminUsername: !Ref AdminUsername
+      AdminUserPassword: !Ref AdminUserPassword
+      DbName: "consumer"
+      DefaultIamRoleArn: !GetAtt "RedshiftRole.Arn"
+      IamRoles:
+        - !GetAtt "RedshiftRole.Arn"
+      Tags:
+        - Key: "x-project"
+          Value: !Ref ProjectTag
+
+  ConsumerWorkgroup:
+    Type: "AWS::RedshiftServerless::Workgroup"
+    Properties:
+      WorkgroupName: !Ref ConsumerName
+      BaseCapacity: 32
+      NamespaceName: !Ref ConsumerNamespace
+      PubliclyAccessible: "true"
+    DependsOn:
+      - "ConsumerNamespace"
+
+  RedshiftRole:
+    Type: "AWS::IAM::Role"
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+        - Effect: "Allow"
+          Principal:
+            Service:
+              - "redshift.amazonaws.com"
+          Action:
+          - "sts:AssumeRole"
+      ManagedPolicyArns:
+        - "arn:aws:iam::aws:policy/service-role/AWSGlueServiceRole"
+        - "arn:aws:iam::aws:policy/AmazonS3FullAccess"
+      Tags:
+        - Key: "x-project"
+          Value: !Ref ProjectTag
