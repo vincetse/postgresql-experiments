@@ -5,7 +5,7 @@ rss = $(aws) redshift-serverless
 ec2 = $(aws) ec2
 
 # set this to something [a-z0-9]+ in case of name collisions
-suffix =
+suffix = s2s
 base_capacity = 32
 user = dba
 password := $(shell echo $${RANDOM} | shasum | awk '{print $$1}')Z
@@ -15,7 +15,7 @@ datashare_name = demo$(suffix)
 project_name_tag = postgresql-experiments/redshift-serverless-datashares
 
 TEMPLATE = --template-body file://stack.yml
-STACK_NAME = redshift-sls-datashares-v3
+STACK_NAME = redshift-sls-datashares-$(suffix)
 STACK = --stack-name $(STACK_NAME)
 PARAMETERS = --parameters \
 	ParameterKey=ProducerName,ParameterValue=$(producer_name) \
