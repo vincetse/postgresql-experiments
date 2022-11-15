@@ -3,6 +3,20 @@ Description: |
   Redshift Serverless datashare demo
 
 Parameters:
+  ProducerName:
+    Description: "Name used for producer resources"
+    Type: "String"
+    MinLength: 3
+    MaxLength: 64
+    AllowedPattern: "^[a-z0-9-]+$"
+
+  ConsumerName:
+    Description: "Name used for consumer resources"
+    Type: "String"
+    MinLength: 3
+    MaxLength: 64
+    AllowedPattern: "^[a-z0-9-]+$"
+
   AdminUsername:
     Description: "The username of the administrator for the primary database created in the namespace."
     Type: "String"
@@ -23,7 +37,7 @@ Resources:
   ProducerNamespace:
     Type: "AWS::RedshiftServerless::Namespace"
     Properties:
-      NamespaceName: "producer"
+      NamespaceName: !Ref ProducerName
       AdminUsername: !Ref AdminUsername
       AdminUserPassword: !Ref AdminUserPassword
       DbName: "producer"
@@ -34,7 +48,7 @@ Resources:
   ProducerWorkgroup:
     Type: "AWS::RedshiftServerless::Workgroup"
     Properties:
-      WorkgroupName: "producer"
+      WorkgroupName: !Ref ProducerName
       BaseCapacity: !Ref BaseCapacity
       NamespaceName: !Ref ProducerNamespace
       PubliclyAccessible: "true"
@@ -44,7 +58,7 @@ Resources:
   ConsumerNamespace:
     Type: "AWS::RedshiftServerless::Namespace"
     Properties:
-      NamespaceName: "consumer"
+      NamespaceName: !Ref ConsumerName
       AdminUsername: !Ref AdminUsername
       AdminUserPassword: !Ref AdminUserPassword
       DbName: "consumer"
@@ -55,7 +69,7 @@ Resources:
   ConsumerWorkgroup:
     Type: "AWS::RedshiftServerless::Workgroup"
     Properties:
-      WorkgroupName: "consumer"
+      WorkgroupName: !Ref ConsumerName
       BaseCapacity: !Ref BaseCapacity
       NamespaceName: !Ref ConsumerNamespace
       PubliclyAccessible: "true"
@@ -65,7 +79,6 @@ Resources:
   RedshiftRole:
     Type: "AWS::IAM::Role"
     Properties:
-      RoleName: "RedshiftDefaultRole-datashares"
       AssumeRolePolicyDocument:
         Version: '2012-10-17'
         Statement:
