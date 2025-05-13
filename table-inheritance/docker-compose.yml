@@ -1,9 +1,24 @@
-db:
-  image: postgres:9.1
-  ports:
-    - "5432:5432"
-  environment:
-    POSTGRES_USER: postgres
-    POSTGRES_PASSWORD: foobar
+services:
+  server:
+    image: postgres:17
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: foobar
 
-
+  client:
+    image: postgres:17
+    environment:
+      PGUSER: postgres
+      PGPASSWORD: foobar
+      PGHOST: server
+    depends_on:
+      - server
+    command: |
+      /bin/bash -eux -c "
+        sleep 10s
+        psql --echo-all --file=/schema-and-data.sql
+      "
+    volumes:
+      - ./schema-and-data.sql:/schema-and-data.sql:ro

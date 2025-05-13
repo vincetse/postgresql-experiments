@@ -1,26 +1,27 @@
-server:
-  image: postgres:9.4
-  environment:
-    POSTGRES_USER: postgres
-    POSTGRES_PASSWORD: postgres
+services:
+  server:
+    image: postgres:17
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
 
-client:
-  image: postgres:8.4
-  environment:
-    PGUSER: postgres
-    PGPASSWORD: postgres
-    PGHOST: server
-  links:
-    - server
-  command: |
-    /bin/bash -eux -c "
-      sleep 10s
-      psql --command='
-        DROP TABLE IF EXISTS foo;
-        DROP TABLE IF EXISTS bar;
-        CREATE TABLE foo(id INTEGER);
-        CREATE TABLE bar(id INTEGER);
-        INSERT INTO foo(id) (SELECT generate_series(1,100) AS id);
-        INSERT INTO bar(id) (SELECT generate_series(1,100) AS id);
-      '
-    "
+  client:
+    image: postgres:15
+    environment:
+      PGUSER: postgres
+      PGPASSWORD: postgres
+      PGHOST: server
+    depends_on:
+      - server
+    command: |
+      /bin/bash -eux -c "
+        sleep 10s
+        psql --command='
+          DROP TABLE IF EXISTS foo;
+          DROP TABLE IF EXISTS bar;
+          CREATE TABLE foo(id INTEGER);
+          CREATE TABLE bar(id INTEGER);
+          INSERT INTO foo(id) (SELECT generate_series(1,100) AS id);
+          INSERT INTO bar(id) (SELECT generate_series(1,100) AS id);
+        '
+      "
